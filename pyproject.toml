@@ -9,6 +9,7 @@ license = "BSD"
 python = "^3.9"
 discord-py-interactions = "^4.0.2"
 requests = "^2.27.1"
+loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.931"
