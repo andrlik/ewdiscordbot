@@ -22,7 +22,7 @@ def form_citation_text(quote: Dict[str, Any]) -> str:
     :return: str
     """
     logger.debug(f"Attempting to form citation text for quote object: {quote}")
-    name = f"--- {quote['character']['name']}"
+    name = f"--- {quote['source']['name']}"
     cite_str = ""
     if quote["citation"] is not None or quote["citation_url"] is not None:
         if quote["citation_url"]:
