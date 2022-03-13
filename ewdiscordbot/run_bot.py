@@ -40,7 +40,7 @@ def form_citation_text(quote: Dict[str, Any]) -> str:
 @bot.command(name="listew", description="List available characters to query.")
 async def list_ew_characters(ctx: interactions.CommandContext):
     response = requests.get(
-        "https://quoteservice.andrlik.org/api/characters/?group=ew&format=json",
+        "https://quoteservice.andrlik.org/api/sources/?group=ew&format=json",
         headers=qs_headers,
     )
     if response.status_code == 200:
@@ -74,7 +74,7 @@ async def random_quote(
     if character is not None:
         # Attempt to retrieve the character listed.
         r = requests.get(
-            f"https://quoteservice.andrlik.org/api/characters/ew-{character.lower()}/get_random_quote/",
+            f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/get_random_quote/",
             headers=qs_headers,
         )
         if r.status_code == 404:
@@ -115,7 +115,7 @@ async def generate_sentence(
 ) -> str:
     if character is not None:
         r = requests.get(
-            f"https://quoteservice.andrlik.org/api/characters/ew-{character.lower()}/generate_sentence/",
+            f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/generate_sentence/",
             headers=qs_headers,
         )
         if r.status_code == 200:
