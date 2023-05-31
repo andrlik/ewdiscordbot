@@ -19,6 +19,7 @@ from interactions import (
     Intents,
     OptionType,
     SlashContext,
+    listen,
     slash_command,
     slash_option,
 )
@@ -79,6 +80,7 @@ async def list_ew_characters(ctx: SlashContext) -> None:
     Args:
         ctx: The command context
     """
+    logger.info("Received a request for the list of available characters.")
     response = httpx.get(
         "https://quoteservice.andrlik.org/api/sources/?group=ew&format=json",
         headers=qs_headers,
@@ -116,6 +118,7 @@ async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
     """
     if character is not None:
         # Attempt to retrieve the character listed.
+        logger.info(f"Received a request to fetch a quote for character {character}")
         r = httpx.get(
             f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/get_random_quote/",
             headers=qs_headers,
@@ -129,6 +132,7 @@ async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
             cite_str = form_citation_text(quote)
             await ctx.send(f"> {quote['quote']}\n> {cite_str}")
     else:
+        logger.info("Received a request to get a random quote.")
         r = httpx.get(
             "https://quoteservice.andrlik.org/api/groups/ew/get_random_quote/",
             headers=qs_headers,
@@ -159,6 +163,7 @@ async def generate_sentence(ctx: SlashContext, character: str | None = None) -> 
         character: Optionally the character to base the sentence upon.
     """
     if character is not None:
+        logger.info(f"Received a request to generate a sentence based on {character}")
         r = httpx.get(
             f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/generate_sentence/",
             headers=qs_headers,
@@ -167,8 +172,10 @@ async def generate_sentence(ctx: SlashContext, character: str | None = None) -> 
             sentence = r.json()["sentence"]
             await ctx.send(f"> {sentence}\n> ---{character}Bot")
         else:
+            logger.error(r.json()["error"])
             await ctx.send(f"Error: {r.json()['error']}")
     else:
+        logger.info("Received a request to generate a sentence.")
         r = httpx.get(
             "https://quoteservice.andrlik.org/api/groups/ew/generate_sentence/",
             headers=qs_headers,
@@ -177,7 +184,26 @@ async def generate_sentence(ctx: SlashContext, character: str | None = None) -> 
         if r.status_code == 200:
             await ctx.send(f"> {results['sentence']}\n ---EWBot")
         else:
+            logger.error(results["error"])
             await ctx.send(f"Error: {results['error']}")
+
+
+@listen()
+async def on_ready():
+    """
+    Tells us when the bot is ready to receive commands.
+    """
+    logger.info("Ready to receive commands.")
+
+
+@listen()
+async def on_startup():
+    """
+    Gives us the commands that are registered for this.
+    """
+    logger.info(
+        f"Launching bot with the following commands: {bot.application_commands}"
+    )
 
 
 if __name__ == "__main__":
