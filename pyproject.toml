@@ -50,6 +50,7 @@ features = [
 
 [tool.hatch.envs.default.scripts]
 run_bot = "python ewdiscordbot/run_bot.py"
+mtypes = "mypy --install-types --config-file pyproject.toml ./"
 
 [tool.black]
 # https://github.com/psf/black

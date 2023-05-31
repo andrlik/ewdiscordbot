@@ -1,25 +1,59 @@
-import os
-from typing import Any, Dict, Optional
+#
+# run_bot.py
+#
+# Copyright (c) 2023 Daniel Andrlik
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
 
-import interactions
-import requests
+from __future__ import annotations
+
+from typing import Any
+
+import os
+
+import httpx
+from interactions import (
+    Client,
+    Intents,
+    OptionType,
+    SlashContext,
+    slash_command,
+    slash_option,
+)
 from loguru import logger
 
-discord_token = os.environ.get("BOT_TOKEN", default=None)
-qs_token = os.environ.get("QS_TOKEN", default=None)
 
-qs_headers = {"Authorization": f"Token {qs_token}"}
+class ImproperlyConfigured(Exception):
+    """
+    Raised when required tokens are missing from the environment.
+    """
 
-if discord_token is not None and qs_token is not None:
-    bot = interactions.Client(discord_token)
+    pass
 
 
-def form_citation_text(quote: Dict[str, Any]) -> str:
+discord_token: str | None = os.environ.get("BOT_TOKEN", default=None)
+qs_token: str | None = os.environ.get("QS_TOKEN", default=None)
+
+if discord_token is None or qs_token is None:
+    raise ImproperlyConfigured(
+        "You must define 'BOT_TOKEN' and 'QS_TOKEN' in your environment!"
+    )
+
+qs_headers: dict[str, str] = {"Authorization": f"Token {qs_token}"}
+
+bot = Client(intents=Intents.DEFAULT)
+
+
+def form_citation_text(quote: dict[str, Any]) -> str:
     """
     Given the data from a quote serializer, form the text to be used for attribution.
 
-    :param quote: A dict representing a Quote object.
-    :return: str
+    Args:
+        quote: The dict representation of the quote from the remote server.
+    Returns:
+        The formatted citation text to include in the discord response.
     """
     logger.debug(f"Attempting to form citation text for quote object: {quote}")
     name = f"--- {quote['source']['name']}"
@@ -37,9 +71,15 @@ def form_citation_text(quote: Dict[str, Any]) -> str:
     return name
 
 
-@bot.command(name="listew", description="List available characters to query.")
-async def list_ew_characters(ctx: interactions.CommandContext):
-    response = requests.get(
+@slash_command(name="listew", description="List available characters to query.")
+async def list_ew_characters(ctx: SlashContext) -> None:
+    """
+    Gets the list of characters from the server and sends the message to discord.
+
+    Args:
+        ctx: The command context
+    """
+    response = httpx.get(
         "https://quoteservice.andrlik.org/api/sources/?group=ew&format=json",
         headers=qs_headers,
     )
@@ -56,24 +96,27 @@ async def list_ew_characters(ctx: interactions.CommandContext):
         )
 
 
-@bot.command(
+@slash_command(
     name="random_quote",
     description="Get a random quote",
-    options=[
-        interactions.Option(
-            name="character",
-            description="Optional: The name of the character you want the quote from, e.g. Nix.",
-            type=interactions.OptionType.STRING,
-            required=False,
-        )
-    ],
 )
-async def random_quote(
-    ctx: interactions.CommandContext, character: Optional[str] = None
-):
+@slash_option(
+    name="character",
+    description="Optional: The specific character you want a quote from.",
+    required=False,
+    opt_type=OptionType.STRING,
+)
+async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
+    """
+    Gets a random quote from the remote server and sends it to discord.
+
+    Args:
+        ctx: The command context.
+        character: Optionally provided to restrict results to a specific character.
+    """
     if character is not None:
         # Attempt to retrieve the character listed.
-        r = requests.get(
+        r = httpx.get(
             f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/get_random_quote/",
             headers=qs_headers,
         )
@@ -86,7 +129,7 @@ async def random_quote(
             cite_str = form_citation_text(quote)
             await ctx.send(f"> {quote['quote']}\n> {cite_str}")
     else:
-        r = requests.get(
+        r = httpx.get(
             "https://quoteservice.andrlik.org/api/groups/ew/get_random_quote/",
             headers=qs_headers,
         )
@@ -95,26 +138,28 @@ async def random_quote(
             cite_str = form_citation_text(quote)
             await ctx.send(f"> {quote['quote']}\n> {cite_str}")
         else:
-            await ctx.send(f"The following error occurred: {quote['error']}")
+            await ctx.send(f"The following error occurred: {r.json()['error']}")
 
 
-@bot.command(
+@slash_command(
     name="generate_sentence",
     description="Bot generated sentence based on existing quotes.",
-    options=[
-        interactions.Option(
-            name="character",
-            description="Optional: base it on a single specified character",
-            type=interactions.OptionType.STRING,
-            required=False,
-        )
-    ],
 )
-async def generate_sentence(
-    ctx: interactions.CommandContext, character: Optional[str] = None
-) -> str:
+@slash_option(
+    name="character",
+    description="Optional: base this on a specified character.",
+    required=False,
+    opt_type=OptionType.STRING,
+)
+async def generate_sentence(ctx: SlashContext, character: str | None = None) -> None:
+    """
+    Generate a sentence using a Markov chain and send it to discord.
+    Args:
+        ctx: The command context.
+        character: Optionally the character to base the sentence upon.
+    """
     if character is not None:
-        r = requests.get(
+        r = httpx.get(
             f"https://quoteservice.andrlik.org/api/sources/ew-{character.lower()}/generate_sentence/",
             headers=qs_headers,
         )
@@ -124,7 +169,7 @@ async def generate_sentence(
         else:
             await ctx.send(f"Error: {r.json()['error']}")
     else:
-        r = requests.get(
+        r = httpx.get(
             "https://quoteservice.andrlik.org/api/groups/ew/generate_sentence/",
             headers=qs_headers,
         )
@@ -135,12 +180,8 @@ async def generate_sentence(
             await ctx.send(f"Error: {results['error']}")
 
 
-class ImproperlyConfigured(Exception):
-    pass
-
-
 if __name__ == "__main__":
     if discord_token is not None and qs_token is not None:
-        bot.start()
+        bot.start(discord_token)
     else:
         raise ImproperlyConfigured
