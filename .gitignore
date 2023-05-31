@@ -323,7 +323,6 @@ Session.vim
 tags
 
 ### Project template
-django_quote_service/media/
 
 .pytest_cache/
 vendors.js
@@ -331,3 +330,5 @@ vendors.js
 .env
 .envs/*
 .envrc
+
+interrogate_badge.svg

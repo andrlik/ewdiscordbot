@@ -5,17 +5,54 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: fix-byte-order-marker
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: check-xml
+      - id: debug-statements
+      - id: detect-aws-credentials
+      - id: detect-private-key
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: check-yaml
-
+      - id: requirements-txt-fixer
+      
+  - repo: https://github.com/emzeat/mz-lictools
+    rev: v2.4.4
+    hooks:
+      - id: license-tools
+      
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.8.0.3
+    hooks:
+      - id: shellcheck
+      
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.31.0
+    hooks:
+      - id: pyupgrade
+        args: [--py310-plus]
+        
   - repo: https://github.com/psf/black
-    rev: 21.12b0
+    rev: 22.10.0
     hooks:
       - id: black
+      
+  - repo: https://github.com/asottile/blacken-docs
+    rev: v1.12.0
+    hooks:
+      -  id: blacken-docs
+         additional_dependencies:
+         - black==21.12b0
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
 
@@ -24,7 +61,13 @@ repos:
     hooks:
       - id: flake8
         args: ["--config=setup.cfg"]
-        additional_dependencies: [flake8-isort]
+        additional_dependencies: [flake8-isort, flake8-bugbear==21.11.29, flake8-no-pep420==2.0.0]
+        
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.5.0
+    hooks:
+      - id: interrogate
+        pass_filenames: false
 
 # sets up .pre-commit-ci.yaml to ensure pre-commit dependencies stay up to date
 ci:
