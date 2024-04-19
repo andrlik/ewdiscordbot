@@ -1,11 +1,9 @@
-#
 # run_bot.py
 #
-# Copyright (c) 2023 Daniel Andrlik
+# Copyright (c) 2023 - 2024 Daniel Andrlik
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
-#
 
 from __future__ import annotations
 
@@ -36,6 +34,9 @@ class ImproperlyConfigured(Exception):
 
 discord_token: str | None = os.environ.get("BOT_TOKEN", default=None)
 qs_token: str | None = os.environ.get("QS_TOKEN", default=None)
+maintenance_mode: str | None = os.environ.get("MAINTENANCE_MODE", default=None)
+
+maintenance_msg = "This bot is currently in maintenance mode while our crack team of invisible monkeys hammer on the server. Thank you for your patience."
 
 if discord_token is None or qs_token is None:
     raise ImproperlyConfigured(
@@ -45,6 +46,22 @@ if discord_token is None or qs_token is None:
 qs_headers: dict[str, str] = {"Authorization": f"Token {qs_token}"}
 
 bot = Client(intents=Intents.DEFAULT)
+
+
+def in_maintenance_mode() -> bool:
+    """
+    Checks to see if the is in maintenance mode with the environment variable and return
+    the determination.
+    """
+    if maintenance_mode is not None and maintenance_mode not in (
+        "",
+        "False",
+        "0",
+        "false",
+        "no",
+    ):
+        return True
+    return False
 
 
 def form_citation_text(quote: dict[str, Any]) -> str:
@@ -80,6 +97,9 @@ async def list_ew_characters(ctx: SlashContext) -> None:
     Args:
         ctx: The command context
     """
+    if in_maintenance_mode():
+        await ctx.send(maintenance_msg, ephemeral=True)
+        return
     logger.info("Received a request for the list of available characters.")
     response = httpx.get(
         "https://quoteservice.andrlik.org/api/sources/?group=ew&format=json",
@@ -116,6 +136,9 @@ async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
         ctx: The command context.
         character: Optionally provided to restrict results to a specific character.
     """
+    if in_maintenance_mode():
+        await ctx.send(maintenance_msg, ephemeral=True)
+        return
     if character is not None:
         # Attempt to retrieve the character listed.
         logger.info(f"Received a request to fetch a quote for character {character}")
@@ -162,6 +185,9 @@ async def generate_sentence(ctx: SlashContext, character: str | None = None) -> 
         ctx: The command context.
         character: Optionally the character to base the sentence upon.
     """
+    if in_maintenance_mode():
+        await ctx.send(maintenance_msg, ephemeral=True)
+        return
     if character is not None:
         logger.info(f"Received a request to generate a sentence based on {character}")
         r = httpx.get(
