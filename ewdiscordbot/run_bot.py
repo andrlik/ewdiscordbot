@@ -98,7 +98,7 @@ async def list_ew_characters(ctx: SlashContext) -> None:
         ctx: The command context
     """
     if in_maintenance_mode():
-        await ctx.send(maintenance_msg, ephemeral=True)
+        await ctx.send(maintenance_msg, delete_after=360, ephemeral=True)
         return
     logger.info("Received a request for the list of available characters.")
     response = httpx.get(
@@ -137,7 +137,7 @@ async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
         character: Optionally provided to restrict results to a specific character.
     """
     if in_maintenance_mode():
-        await ctx.send(maintenance_msg, ephemeral=True)
+        await ctx.send(maintenance_msg, delete_after=360, ephemeral=True)
         return
     if character is not None:
         # Attempt to retrieve the character listed.
@@ -172,12 +172,6 @@ async def random_quote(ctx: SlashContext, character: str | None = None) -> None:
     name="generate_sentence",
     description="Bot generated sentence based on existing quotes.",
 )
-@slash_option(
-    name="character",
-    description="Optional: base this on a specified character.",
-    required=False,
-    opt_type=OptionType.STRING,
-)
 async def generate_sentence(ctx: SlashContext, character: str | None = None) -> None:
     """
     Generate a sentence using a Markov chain and send it to discord.
@@ -186,7 +180,8 @@ async def generate_sentence(ctx: SlashContext, character: str | None = None) -> 
         character: Optionally the character to base the sentence upon.
     """
     if in_maintenance_mode():
-        await ctx.send(maintenance_msg, ephemeral=True)
+        logger.info("Bot is in maintenance mode... sending error message.")
+        await ctx.send(maintenance_msg, delete_after=360, ephemeral=True)
         return
     if character is not None:
         logger.info(f"Received a request to generate a sentence based on {character}")
