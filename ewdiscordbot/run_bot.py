@@ -214,6 +214,8 @@ async def on_ready():
     """
     Tells us when the bot is ready to receive commands.
     """
+    if in_maintenance_mode():
+        logger.info("In Maintenance Mode")
     logger.info("Ready to receive commands.")
 
 
